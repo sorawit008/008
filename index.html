@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreamy Restaurant - สั่งอาหารและจัดการเมนู</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar for better UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        .toast-enter {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        .toast-enter-active {
+            transform: translateY(0);
+            opacity: 1;
+            transition: all 0.3s ease-out;
+        }
+        .toast-exit {
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s ease-in;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-orange-500 to-red-500 shadow-lg sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <h1 class="text-2xl font-bold tracking-wide">Dreamy Restaurant</h1>
+            </div>
+            <nav class="flex gap-2 bg-white/20 p-1 rounded-lg">
+                <button id="navCustomer" class="text-orange-500 bg-white font-medium px-4 py-1.5 rounded-md shadow-sm transition-all duration-200">หน้าลูกค้า (สั่งอาหาร)</button>
+                <button id="navAdmin" class="text-white hover:bg-white/20 font-medium px-4 py-1.5 rounded-md transition-all duration-200">จัดการเมนู (Admin)</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <div class="flex-grow w-full relative">
+        
+        <!-- Customer View -->
+        <main id="customerView" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
+            <!-- Left: Menu List -->
+            <section class="w-full lg:w-2/3">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">เมนูอาหารที่แนะนำ</h2>
+                    <p class="text-slate-500 text-sm mt-1">เลือกเมนูที่คุณชื่นชอบแล้วเพิ่มลงในตะกร้าเลย</p>
+                </div>
+                <div id="customerMenuGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Customer Menu Items will go here via JS -->
+                </div>
+            </section>
+            
+            <!-- Right: Cart Sidebar -->
+            <aside class="w-full lg:w-1/3 flex-shrink-0">
+                <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-100 sticky top-28 flex flex-col max-h-[calc(100vh-8rem)]">
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2 pb-4 border-b border-slate-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        ตะกร้าสินค้า
+                    </h2>
+                    
+                    <!-- Cart Items -->
+                    <div id="cartItemsList" class="flex-grow overflow-y-auto space-y-3 mb-4 pr-2">
+                        <!-- Items inject via JS -->
+                    </div>
+                    
+                    <!-- Cart Summary -->
+                    <div class="border-t border-slate-100 pt-4 mt-auto">
+                        <div class="flex justify-between text-slate-600 mb-2">
+                            <span>ยอดรวม</span>
+                            <span id="cartSubtotal" class="font-medium">฿0.00</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-slate-800 mb-4">
+                            <span>สุทธิ</span>
+                            <span id="cartTotal" class="text-orange-500">฿0.00</span>
+                        </div>
+                        <button id="checkoutBtn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex justify-center items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            สั่งซื้อ
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Admin View (Original Content) -->
+        <div id="adminView" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-col gap-8">
+            
+            <!-- Admin Sub Navigation -->
+            <div class="flex gap-2 border-b border-slate-200 pb-4">
+                <button id="tabAdminMenu" class="px-4 py-2 bg-slate-800 text-white rounded-lg font-medium text-sm transition-colors">จัดการเมนูอาหาร</button>
+                <button id="tabAdminOrders" class="px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg font-medium text-sm transition-colors relative">
+                    รายการสั่งซื้อ
+                    <span id="orderCountBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
+            </div>
+
+            <!-- Menu Management Section -->
+            <div id="adminMenuSection" class="w-full flex flex-col lg:flex-row gap-8">
+                <!-- Left Column: Form (Create / Update) -->
+                <aside class="w-full lg:w-1/3 flex-shrink-0">
+                    <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-100 sticky top-28">
+                        <h2 id="formTitle" class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            เพิ่มเมนูใหม่
+                        </h2>
+                        
+                        <form id="foodForm" class="space-y-4">
+                            <input type="hidden" id="foodId">
+                            
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">ชื่อเมนูอาหาร *</label>
+                                <input type="text" id="name" required placeholder="เช่น ข้าวกะเพราหมูกรอบ" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all">
+                            </div>
+
+                        <div>
+                            <label for="category" class="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่ *</label>
+                            <select id="category" required class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white">
+                                <option value="" disabled selected>เลือกหมวดหมู่</option>
+                                <option value="อาหารจานเดียว">อาหารจานเดียว</option>
+                                <option value="กับข้าว">กับข้าว</option>
+                                <option value="ของทานเล่น">ของทานเล่น</option>
+                                <option value="เครื่องดื่ม">เครื่องดื่ม</option>
+                                <option value="ของหวาน">ของหวาน</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-slate-700 mb-1">ราคา (บาท) *</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 sm:text-sm">฿</span>
+                                </div>
+                                <input type="number" id="price" required min="0" step="0.5" placeholder="0.00" class="w-full pl-8 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="image" class="block text-sm font-medium text-slate-700 mb-1">URL รูปภาพ (ตัวเลือก)</label>
+                            <input type="url" id="image" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all">
+                            <p class="mt-1 text-xs text-slate-500">ปล่อยว่างไว้หากไม่มีรูปภาพ</p>
+                        </div>
+
+                        <div class="pt-4 flex gap-3">
+                            <button type="button" id="cancelBtn" class="hidden flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium">
+                                ยกเลิก
+                            </button>
+                            <button type="submit" id="submitBtn" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200">
+                                บันทึกข้อมูล
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Right Column: Menu List -->
+            <section class="w-full lg:w-2/3">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">รายการเมนูทั้งหมด</h2>
+                        <p class="text-slate-500 text-sm mt-1">จัดการเมนูอาหาร ดูรายละเอียด แก้ไข และลบ</p>
+                    </div>
+                    <div class="text-sm font-medium bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200 text-slate-600">
+                        รวม: <span id="totalItems" class="text-orange-500 font-bold">0</span> รายการ
+                    </div>
+                </div>
+
+                <!-- Items Grid -->
+                <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Data will be populated here via JS -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-slate-900 mb-1">ยังไม่มีรายการเมนูอาหาร</h3>
+                    <p class="text-slate-500 text-sm max-w-sm">เพิ่มเมนูอาหารใหม่จากฟอร์มด้านซ้ายมือเพื่อเริ่มต้นจัดการร้านอาหารของคุณ</p>
+                </div>
+            </section>
+            </div>
+
+            <!-- Orders Management Section -->
+            <div id="adminOrdersSection" class="hidden w-full flex-col gap-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">รายการสั่งซื้อจากลูกค้า</h2>
+                    <p class="text-slate-500 text-sm mt-1">อัปเดตสถานะการจัดส่งให้ลูกค้า</p>
+                </div>
+                
+                <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Orders will be populated here via JS -->
+                </div>
+                
+                <!-- Empty Orders State -->
+                <div id="emptyOrdersState" class="hidden flex-col items-center justify-center py-16 px-4 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-slate-900 mb-1">ยังไม่มีรายการสั่งซื้อ</h3>
+                    <p class="text-slate-500 text-sm max-w-sm">เมื่อลูกค้าสั่งอาหาร รายการจะแสดงขึ้นที่นี่อัตโนมัติ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform scale-100 transition-transform">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-center text-slate-900 mb-2">ยืนยันการลบเมนู</h3>
+            <p class="text-slate-500 text-center text-sm mb-6">คุณแน่ใจหรือไม่ว่าต้องการลบเมนู "<span id="deleteItemName" class="font-semibold text-slate-700"></span>"? การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+            <div class="flex gap-3">
+                <button id="cancelDeleteBtn" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">
+                    ยกเลิก
+                </button>
+                <button id="confirmDeleteBtn" class="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg shadow-md transition-colors">
+                    ยืนยันการลบ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 flex items-center gap-3 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-xl toast-exit hidden">
+        <svg id="toastIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span id="toastMessage" class="text-sm font-medium">ทำรายการสำเร็จ</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        // Initial Mock Data
+        let menuItems = [
+            { id: 1, name: 'ข้าวกะเพราหมูกรอบ', category: 'อาหารจานเดียว', price: 70, image: 'https://placehold.co/600x400/ffedd5/ea580c?text=Krapao+Moo+Krob' },
+            { id: 2, name: 'ต้มยำกุ้งน้ำข้น', category: 'กับข้าว', price: 150, image: 'https://placehold.co/600x400/ffedd5/ea580c?text=Tom+Yum+Goong' },
+            { id: 3, name: 'ปีกไก่ทอดน้ำปลา', category: 'ของทานเล่น', price: 89, image: '' } // Empty image to test fallback
+        ];
+        
+        let editingId = null;
+        let itemToDelete = null;
+        let cart = []; // เก็บสินค้าในตะกร้าลูกค้า
+        let orders = []; // เก็บประวัติรายการสั่งซื้อ
+
+        // --- DOM Elements ---
+        const navCustomer = document.getElementById('navCustomer');
+        const navAdmin = document.getElementById('navAdmin');
+        const customerView = document.getElementById('customerView');
+        const adminView = document.getElementById('adminView');
+        
+        const customerMenuGrid = document.getElementById('customerMenuGrid');
+        const cartItemsList = document.getElementById('cartItemsList');
+        const cartSubtotal = document.getElementById('cartSubtotal');
+        const cartTotalDisplay = document.getElementById('cartTotal');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+
+        const form = document.getElementById('foodForm');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        const inputs = {
+            id: document.getElementById('foodId'),
+            name: document.getElementById('name'),
+            category: document.getElementById('category'),
+            price: document.getElementById('price'),
+            image: document.getElementById('image')
+        };
+
+        const menuGrid = document.getElementById('menuGrid');
+        const emptyState = document.getElementById('emptyState');
+        const totalItemsSpan = document.getElementById('totalItems');
+
+        // Admin Sub Tabs Elements
+        const tabAdminMenu = document.getElementById('tabAdminMenu');
+        const tabAdminOrders = document.getElementById('tabAdminOrders');
+        const adminMenuSection = document.getElementById('adminMenuSection');
+        const adminOrdersSection = document.getElementById('adminOrdersSection');
+        const orderCountBadge = document.getElementById('orderCountBadge');
+        const ordersGrid = document.getElementById('ordersGrid');
+        const emptyOrdersState = document.getElementById('emptyOrdersState');
+
+        // Modal Elements
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteItemName = document.getElementById('deleteItemName');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        // Toast Elements
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // --- Constants ---
+        const DEFAULT_IMAGE = 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
+
+        // --- Navigation Functions ---
+        function switchView(view) {
+            if (view === 'customer') {
+                customerView.classList.remove('hidden');
+                customerView.classList.add('flex');
+                adminView.classList.add('hidden');
+                adminView.classList.remove('flex');
+                
+                navCustomer.classList.add('text-orange-500', 'bg-white', 'shadow-sm');
+                navCustomer.classList.remove('text-white', 'hover:bg-white/20');
+                
+                navAdmin.classList.remove('text-orange-500', 'bg-white', 'shadow-sm');
+                navAdmin.classList.add('text-white', 'hover:bg-white/20');
+                
+                renderCustomerMenu();
+            } else {
+                adminView.classList.remove('hidden');
+                adminView.classList.add('flex');
+                customerView.classList.add('hidden');
+                customerView.classList.remove('flex');
+                
+                navAdmin.classList.add('text-orange-500', 'bg-white', 'shadow-sm');
+                navAdmin.classList.remove('text-white', 'hover:bg-white/20');
+                
+                navCustomer.classList.remove('text-orange-500', 'bg-white', 'shadow-sm');
+                navCustomer.classList.add('text-white', 'hover:bg-white/20');
+                
+                renderMenu();
+            }
+        }
+
+        navCustomer.addEventListener('click', () => switchView('customer'));
+        navAdmin.addEventListener('click', () => switchView('admin'));
+
+        // --- Admin Sub Tabs Navigation ---
+        function switchAdminTab(tab) {
+            if (tab === 'menu') {
+                adminMenuSection.classList.remove('hidden');
+                adminMenuSection.classList.add('flex');
+                adminOrdersSection.classList.add('hidden');
+                adminOrdersSection.classList.remove('flex');
+                
+                tabAdminMenu.classList.add('bg-slate-800', 'text-white');
+                tabAdminMenu.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                
+                tabAdminOrders.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                tabAdminOrders.classList.remove('bg-slate-800', 'text-white');
+            } else if (tab === 'orders') {
+                adminOrdersSection.classList.remove('hidden');
+                adminOrdersSection.classList.add('flex');
+                adminMenuSection.classList.add('hidden');
+                adminMenuSection.classList.remove('flex');
+                
+                tabAdminOrders.classList.add('bg-slate-800', 'text-white');
+                tabAdminOrders.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                
+                tabAdminMenu.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                tabAdminMenu.classList.remove('bg-slate-800', 'text-white');
+                
+                renderOrders();
+            }
+        }
+
+        tabAdminMenu.addEventListener('click', () => switchAdminTab('menu'));
+        tabAdminOrders.addEventListener('click', () => switchAdminTab('orders'));
+
+        // --- Customer Menu & Cart Functions ---
+        function renderCustomerMenu() {
+            customerMenuGrid.innerHTML = '';
+            
+            if (menuItems.length === 0) {
+                customerMenuGrid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-dashed border-slate-300">
+                        ขออภัย ยังไม่มีเมนูอาหารในขณะนี้
+                    </div>
+                `;
+                return;
+            }
+
+            menuItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group flex flex-col';
+                
+                const imgUrl = item.image ? item.image : DEFAULT_IMAGE;
+                const priceFormatted = Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden bg-slate-100">
+                        <img src="${imgUrl}" alt="${item.name}" 
+                            onerror="this.onerror=null;this.src='${DEFAULT_IMAGE}';"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-orange-600 shadow-sm">
+                            ${item.category}
+                        </div>
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-1">${item.name}</h3>
+                        <p class="text-xl font-bold text-orange-500 mt-auto mb-4">฿${priceFormatted}</p>
+                        <button onclick="addToCart(${item.id})" class="w-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white border border-orange-200 hover:border-orange-500 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            เพิ่มลงตะกร้า
+                        </button>
+                    </div>
+                `;
+                customerMenuGrid.appendChild(card);
+            });
+        }
+
+        window.addToCart = function(id) {
+            const item = menuItems.find(i => i.id === id);
+            if (item) {
+                const existingItem = cart.find(c => c.id === id);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ ...item, quantity: 1 });
+                }
+                renderCart();
+                showToast(`เพิ่ม "${item.name}" ลงตะกร้าแล้ว`);
+            }
+        };
+
+        window.removeFromCart = function(id) {
+            cart = cart.filter(c => c.id !== id);
+            renderCart();
+        };
+
+        window.updateQuantity = function(id, delta) {
+            const item = cart.find(c => c.id === id);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(id);
+                } else {
+                    renderCart();
+                }
+            }
+        };
+
+        function renderCart() {
+            cartItemsList.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                cartItemsList.innerHTML = `
+                    <div class="text-center text-slate-400 text-sm py-8">
+                        ยังไม่มีสินค้าในตะกร้า
+                    </div>
+                `;
+                cartSubtotal.textContent = '฿0.00';
+                cartTotalDisplay.textContent = '฿0.00';
+                return;
+            }
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                const priceFormatted = Number(itemTotal).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                const imgUrl = item.image ? item.image : DEFAULT_IMAGE;
+
+                const cartRow = document.createElement('div');
+                cartRow.className = 'flex items-center gap-3 bg-slate-50 p-2 rounded-lg';
+                cartRow.innerHTML = `
+                    <img src="${imgUrl}" class="w-12 h-12 rounded object-cover" onerror="this.onerror=null;this.src='${DEFAULT_IMAGE}';">
+                    <div class="flex-grow min-w-0">
+                        <div class="text-sm font-semibold text-slate-800 truncate">${item.name}</div>
+                        <div class="text-xs text-orange-500 font-medium">฿${priceFormatted}</div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white rounded border border-slate-200 p-0.5 shadow-sm">
+                        <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded text-lg leading-none transition-colors">-</button>
+                        <span class="w-4 text-center text-sm font-medium">${item.quantity}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded text-lg leading-none transition-colors">+</button>
+                    </div>
+                `;
+                cartItemsList.appendChild(cartRow);
+            });
+
+            const totalFormatted = Number(total).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            cartSubtotal.textContent = `฿${totalFormatted}`;
+            cartTotalDisplay.textContent = `฿${totalFormatted}`;
+        }
+
+        checkoutBtn.addEventListener('click', () => {
+            if (cart.length === 0) {
+                showToast('ตะกร้าว่างเปล่า กรุณาเลือกเมนูก่อนชำระเงิน');
+                return;
+            }
+            
+            // สร้าง Order ใหม่
+            const newOrder = {
+                id: 'ORD' + Math.floor(1000 + Math.random() * 9000), // สร้างรหัส Order จำลอง
+                items: [...cart],
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                status: 'pending', // สถานะ: pending, delivering, completed
+                timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+            };
+            
+            orders.unshift(newOrder); // เพิ่ม order ใหม่ไว้หน้าสุด
+            updateOrderBadge(); // อัปเดตตัวเลขแจ้งเตือน
+            
+            cart = [];
+            renderCart();
+            showToast('สั่งซื้อสำเร็จ! ออเดอร์ถูกส่งไปยังร้านค้าแล้ว');
+        });
+
+        // --- Core Functions (CRUD Admin) ---
+
+        // READ: Render items to the grid
+        function renderMenu() {
+            menuGrid.innerHTML = '';
+            totalItemsSpan.textContent = menuItems.length;
+
+            if (menuItems.length === 0) {
+                menuGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                menuGrid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                menuItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group flex flex-col';
+                    
+                    const imgUrl = item.image ? item.image : DEFAULT_IMAGE;
+                    const priceFormatted = Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+                    card.innerHTML = `
+                        <div class="relative h-48 overflow-hidden bg-slate-100">
+                            <img src="${imgUrl}" alt="${item.name}" 
+                                onerror="this.onerror=null;this.src='${DEFAULT_IMAGE}';"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-orange-600 shadow-sm">
+                                ${item.category}
+                            </div>
+                        </div>
+                        <div class="p-5 flex-grow flex flex-col">
+                            <h3 class="text-lg font-bold text-slate-800 mb-1 truncate" title="${item.name}">${item.name}</h3>
+                            <p class="text-xl font-bold text-orange-500 mt-auto">฿${priceFormatted}</p>
+                        </div>
+                        <div class="px-5 pb-5 flex gap-2 border-t border-slate-50 pt-4">
+                            <button onclick="editItem(${item.id})" class="flex-1 flex items-center justify-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                แก้ไข
+                            </button>
+                            <button onclick="promptDelete(${item.id})" class="flex-1 flex items-center justify-center gap-1 bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                ลบ
+                            </button>
+                        </div>
+                    `;
+                    menuGrid.appendChild(card);
+                });
+            }
+        }
+
+        // CREATE & UPDATE: Handle form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const newItem = {
+                id: editingId ? editingId : Date.now(),
+                name: inputs.name.value.trim(),
+                category: inputs.category.value,
+                price: parseFloat(inputs.price.value),
+                image: inputs.image.value.trim()
+            };
+
+            if (editingId) {
+                // Update existing item
+                const index = menuItems.findIndex(item => item.id === editingId);
+                if (index !== -1) {
+                    menuItems[index] = newItem;
+                    showToast(`อัปเดตเมนู "${newItem.name}" สำเร็จ`);
+                }
+            } else {
+                // Add new item
+                menuItems.push(newItem);
+                showToast(`เพิ่มเมนู "${newItem.name}" สำเร็จ`);
+                // Scroll to bottom to see new item on mobile
+                if (window.innerWidth < 1024) {
+                    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
+                }
+            }
+
+            resetForm();
+            renderMenu();
+            renderCustomerMenu(); // อัปเดตเมนูในหน้าลูกค้าด้วย
+        });
+
+        // UPDATE (Prepare form): Populate form with item data
+        window.editItem = function(id) {
+            const item = menuItems.find(i => i.id === id);
+            if (!item) return;
+
+            editingId = id;
+            inputs.id.value = item.id;
+            inputs.name.value = item.name;
+            inputs.category.value = item.category;
+            inputs.price.value = item.price;
+            inputs.image.value = item.image;
+
+            // Update UI for editing state
+            formTitle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                แก้ไขเมนู
+            `;
+            submitBtn.textContent = 'อัปเดตข้อมูล';
+            submitBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+            submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            cancelBtn.classList.remove('hidden');
+
+            // Scroll to form (useful on mobile)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            inputs.name.focus();
+        };
+
+        // DELETE: Show confirmation modal
+        window.promptDelete = function(id) {
+            const item = menuItems.find(i => i.id === id);
+            if (!item) return;
+
+            itemToDelete = item;
+            deleteItemName.textContent = item.name;
+            deleteModal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before animating opacity if needed
+        };
+
+        // DELETE: Execute deletion
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (itemToDelete) {
+                menuItems = menuItems.filter(item => item.id !== itemToDelete.id);
+                // ลบออกจากตะกร้าลูกค้าด้วย ถ้าถูกลบออกจากระบบ
+                cart = cart.filter(c => c.id !== itemToDelete.id);
+                
+                renderMenu();
+                renderCustomerMenu();
+                renderCart();
+                
+                showToast(`ลบเมนู "${itemToDelete.name}" แล้ว`);
+                
+                // If we delete the item we are currently editing, reset the form
+                if (editingId === itemToDelete.id) {
+                    resetForm();
+                }
+            }
+            closeModal();
+        });
+
+        // Cancel Delete
+        cancelDeleteBtn.addEventListener('click', closeModal);
+
+        // Cancel Edit
+        cancelBtn.addEventListener('click', resetForm);
+
+        // --- Orders Management Functions ---
+        function updateOrderBadge() {
+            const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'delivering').length;
+            if (pendingOrders > 0) {
+                orderCountBadge.textContent = pendingOrders;
+                orderCountBadge.classList.remove('hidden');
+            } else {
+                orderCountBadge.classList.add('hidden');
+            }
+        }
+
+        function renderOrders() {
+            ordersGrid.innerHTML = '';
+            
+            if (orders.length === 0) {
+                ordersGrid.classList.add('hidden');
+                emptyOrdersState.classList.remove('hidden');
+                emptyOrdersState.classList.add('flex');
+                return;
+            }
+            
+            ordersGrid.classList.remove('hidden');
+            emptyOrdersState.classList.add('hidden');
+            emptyOrdersState.classList.remove('flex');
+            
+            orders.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col h-full';
+                
+                let statusBadge = '';
+                let actionButton = '';
+                
+                // กำหนดสถานะสีและปุ่มกด
+                if (order.status === 'pending') {
+                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">รอรับออเดอร์</span>';
+                    actionButton = `<button onclick="updateOrderStatus('${order.id}', 'delivering')" class="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        กำลังจัดส่ง
+                    </button>`;
+                } else if (order.status === 'delivering') {
+                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">กำลังจัดส่ง</span>';
+                    actionButton = `<button onclick="updateOrderStatus('${order.id}', 'completed')" class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        จัดส่งสำเร็จ
+                    </button>`;
+                } else {
+                    statusBadge = '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 border border-green-200">เสร็จสิ้นแล้ว</span>';
+                    actionButton = `<button disabled class="w-full mt-4 bg-slate-100 text-slate-400 font-medium py-2 rounded-lg cursor-not-allowed border border-slate-200">
+                        รายการสมบูรณ์
+                    </button>`;
+                }
+                
+                // รายการอาหารที่สั่ง
+                const itemsListHtml = order.items.map(item => 
+                    `<div class="flex justify-between text-sm mb-2 text-slate-600">
+                        <span><span class="font-medium text-slate-800">${item.quantity}x</span> ${item.name}</span>
+                        <span>฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
+                    </div>`
+                ).join('');
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <div class="font-bold text-slate-800 text-lg">#${order.id}</div>
+                            <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                ${order.timestamp}
+                            </div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="flex-grow mb-4">
+                        ${itemsListHtml}
+                    </div>
+                    
+                    <div class="border-t border-slate-100 pt-3 mt-auto">
+                        <div class="flex justify-between font-bold text-slate-800">
+                            <span>ยอดชำระ</span>
+                            <span class="text-orange-500 text-lg">฿${order.total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        ${actionButton}
+                    </div>
+                `;
+                ordersGrid.appendChild(card);
+            });
+        }
+
+        window.updateOrderStatus = function(orderId, newStatus) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                updateOrderBadge();
+                renderOrders();
+                showToast(`อัปเดตสถานะออเดอร์ #${orderId} เป็น "${newStatus === 'delivering' ? 'กำลังจัดส่ง' : 'จัดส่งสำเร็จ'}"`);
+            }
+        };
+
+        // --- Utility Functions ---
+
+        function resetForm() {
+            form.reset();
+            editingId = null;
+            inputs.id.value = '';
+            
+            // Reset UI
+            formTitle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                เพิ่มเมนูใหม่
+            `;
+            submitBtn.textContent = 'บันทึกข้อมูล';
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            submitBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            cancelBtn.classList.add('hidden');
+        }
+
+        function closeModal() {
+            deleteModal.classList.add('hidden');
+            itemToDelete = null;
+        }
+
+        // Close modal when clicking outside
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                closeModal();
+            }
+        });
+
+        let toastTimeout;
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden', 'toast-exit');
+            toast.classList.add('toast-enter-active');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.classList.add('hidden'), 300); // match transition duration
+            }, 3000);
+        }
+
+        // --- Initialization ---
+        renderMenu();
+        renderCustomerMenu();
+        renderCart();
+        renderOrders();
+        updateOrderBadge();
+        switchView('customer'); // เริ่มต้นที่หน้าลูกค้า
+
+    </script>
+</body>
+</html>
